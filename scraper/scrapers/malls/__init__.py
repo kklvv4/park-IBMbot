@@ -1,0 +1,1 @@
+# Malls scrapers package

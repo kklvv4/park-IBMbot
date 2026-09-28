@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Malaysia Parking Map — KL &amp; Selangor</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<!-- ── Sidebar ────────────────────────────────────────────────────────────── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <h1>🅿 KL &amp; Selangor<br><span>Parking Map</span></h1>
+    <button id="sidebar-toggle" title="Collapse sidebar">&#x276E;</button>
+  </div>
+
+  <!-- Search bar -->
+  <div class="section">
+    <label class="section-title" for="search-input">Search Location</label>
+    <div id="search-box">
+      <input id="search-input" type="text" placeholder="e.g. KLCC, Bangsar, SS2…" autocomplete="off" />
+      <button id="search-btn" title="Search">&#x1F50D;</button>
+    </div>
+    <ul id="search-results" hidden></ul>
+  </div>
+
+  <!-- Stats bar -->
+  <div id="stats-bar" class="section">
+    <span id="stat-count">— locations</span>
+    <span id="stat-avg">avg —</span>
+  </div>
+
+  <!-- Filters -->
+  <div class="section">
+    <div class="section-title collapsible" data-target="filter-type">Type</div>
+    <div id="filter-type" class="filter-group">
+      <label><input type="checkbox" class="f-type" value="street"        checked /> Street Parking</label>
+      <label><input type="checkbox" class="f-type" value="mall"          checked /> Mall</label>
+      <label><input type="checkbox" class="f-type" value="multistorey"   checked /> Multi-Storey</label>
+      <label><input type="checkbox" class="f-type" value="open_lot"      checked /> Open Lot</label>
+      <label><input type="checkbox" class="f-type" value="valet"         checked /> Valet</label>
+      <label><input type="checkbox" class="f-type" value="park_and_ride" checked /> Park &amp; Ride</label>
+      <label><input type="checkbox" class="f-type" value="airport"       checked /> Airport</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title collapsible" data-target="filter-price">Price Range (RM/hr)</div>
+    <div id="filter-price" class="filter-group">
+      <div id="price-range-labels">
+        <span>RM <span id="price-min-lbl">0</span></span>
+        <span>RM <span id="price-max-lbl">20</span></span>
+      </div>
+      <input id="price-min" type="range" min="0" max="20" step="0.5" value="0" />
+      <input id="price-max" type="range" min="0" max="20" step="0.5" value="20" />
+      <small id="price-note">* Valet &amp; flat-rate entries always shown</small>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title collapsible" data-target="filter-payment">Payment Method</div>
+    <div id="filter-payment" class="filter-group">
+      <label><input type="checkbox" class="f-payment" value="Touch 'n Go" checked /> Touch 'n Go</label>
+      <label><input type="checkbox" class="f-payment" value="Cash"        checked /> Cash</label>
+      <label><input type="checkbox" class="f-payment" value="Card"        checked /> Card / Visa / MC</label>
+      <label><input type="checkbox" class="f-payment" value="App"         checked /> App (JomParking etc.)</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title collapsible" data-target="filter-features">Features</div>
+    <div id="filter-features" class="filter-group">
+      <label><input type="checkbox" class="f-feature" value="ev"           /> EV Charging</label>
+      <label><input type="checkbox" class="f-feature" value="oku"          /> OKU / Disabled Bays</label>
+      <label><input type="checkbox" class="f-feature" value="motorcycle"   /> Motorcycle Rate</label>
+      <label><input type="checkbox" class="f-feature" value="bookable"     /> Online Bookable</label>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="section">
+    <div class="section-title">Legend</div>
+    <div id="legend">
+      <div class="legend-item"><span class="dot dot-free"></span>Free / Flat RM1</div>
+      <div class="legend-item"><span class="dot dot-low"></span>RM1–2 / hr</div>
+      <div class="legend-item"><span class="dot dot-mid"></span>RM2–4 / hr</div>
+      <div class="legend-item"><span class="dot dot-high"></span>RM4+ / hr</div>
+      <div class="legend-item"><span class="dot dot-valet"></span>Valet / Premium</div>
+      <div class="legend-item"><span class="dot dot-pr"></span>Park &amp; Ride</div>
+    </div>
+  </div>
+
+  <div id="sidebar-footer">
+    Data: OSM · DBKL · MBPJ · MBSA · MPSJ · MPAJ · Mall operators<br/>
+    Map tiles: <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>
+  </div>
+</aside>
+
+<!-- ── Map ─────────────────────────────────────────────────────────────────── -->
+<div id="map-container">
+  <div id="map"></div>
+  <div id="loading-overlay"><div class="spinner"></div><p>Loading parking data…</p></div>
+</div>
+
+<!-- ── Popup detail panel ─────────────────────────────────────────────────── -->
+<div id="detail-panel" hidden>
+  <button id="detail-close" title="Close">&times;</button>
+  <div id="detail-content"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet MarkerCluster -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<!-- App JS (order matters) -->
+<script src="/js/api.js"></script>
+<script src="/js/popup.js"></script>
+<script src="/js/markers.js"></script>
+<script src="/js/filters.js"></script>
+<script src="/js/map.js"></script>
+
+</body>
+</html>
